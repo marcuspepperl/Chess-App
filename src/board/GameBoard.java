@@ -1,6 +1,8 @@
 package board;
 
 import piece.*;
+import engine.*;
+
 import java.util.Set;
 import java.util.HashSet;
 
@@ -18,6 +20,11 @@ public class GameBoard {
     private King whiteKing;
     private King blackKing;
 
+    private StandardEngine standardEngine;
+    private EnPassantEngine enPassantEngine;
+    private CastlesEngine castlesEngine;
+    private PromotionEngine promotionEngine;
+
     private int moveCount;
     private APiece prevPiece;
 
@@ -34,6 +41,10 @@ public class GameBoard {
         this.blackPieces = new HashSet<>();
         this.takenWhitePieces = new HashSet<>();
         this.takenBlackPieces = new HashSet<>();
+        this.standardEngine = new StandardEngine(this);
+        this.enPassantEngine = new EnPassantEngine(this);
+        this.castlesEngine = new CastlesEngine(this);
+        this.promotionEngine = new PromotionEngine(this);
     }
 
     public void setPieces(Set<APiece> allPieces) throws
@@ -73,6 +84,18 @@ public class GameBoard {
         }
     }
 
+    public boolean isCheck(int color) {
+        return !this.checkBy(color).isEmpty();
+    }
+
+    public boolean isCheckMate(int color) {
+        return isCheck(color) && !hasValidMove(color);
+    }
+
+    public boolean isStaleMate(int color) {
+        return !isCheck(color) && !hasValidMove(color);
+    }
+
     public Set<Coordinates> checkBy(int color) {
 
         Set<Coordinates> checkSet = new HashSet<>();
@@ -92,18 +115,6 @@ public class GameBoard {
             }
         }
         return checkSet;
-    }
-
-    public boolean isCheck(int color) {
-        return !this.checkBy(color).isEmpty();
-    }
-
-    public boolean isCheckMate(int color) {
-        return isCheck(color) && !hasValidMove(color);
-    }
-
-    public boolean isStaleMate(int color) {
-        return !isCheck(color) && !hasValidMove(color);
     }
 
     // returns true if promotion is requested
@@ -128,8 +139,7 @@ public class GameBoard {
         if (this.handleStandard(startSquare, endSquare) ||
             this.handleCastles(startSquare, endSquare) ||
             this.handleEnPassant(startSquare, endSquare)) {
-            this.prevPiece = this.getPiece(endSquare);
-            this.moveCount++;
+            this.endMove(this.getPiece(endSquare));
             return false;
         }
         throw new InvalidMoveException("The move is not possible");
@@ -141,8 +151,7 @@ public class GameBoard {
         this.executeStandard(startSquare, endSquare);
         this.takePiece(movePiece);
         this.addPiece(newPiece);
-        this.prevPiece = this.getPiece(endSquare);
-        this.moveCount++;
+        this.endMove(this.getPiece(endSquare));
     }
 
     // returns true if promotion is valid
@@ -367,7 +376,7 @@ public class GameBoard {
             coordinates = piece.getCoordinates();
             for (Coordinates newSquare : piece
                 .validMoves(this.colorBoard)) {
-                if (this.simulateStandard(coordinates, newSquare)) {
+                if (this.validStandard(coordinates, newSquare)) {
                     return true;
                 }
             }
@@ -411,6 +420,11 @@ public class GameBoard {
         } else {
             this.blackPieces.add(piece);
         }
+    }
+
+    private void endMove(APiece movePiece) {
+        this.prevPiece = movePiece;
+        this.moveCount++;
     }
 
     private BoardWrapper<APiece> initializePieceBoard(int xSize, int ySize) {
