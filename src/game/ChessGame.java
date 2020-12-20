@@ -65,7 +65,7 @@ public class ChessGame {
          do {
              promotionPiece = this.createPiece(player.requestPromotion(), turn);
              } while (promotionPiece == null);
-         board.executePromotion(request[0], request[1], promotionPiece);
+         board.handlePromotion(request[0], request[1], promotionPiece);
      }
 
      public void endGame(GameBoard board, Player whitePlayer, Player blackPlayer, int outcome) {
