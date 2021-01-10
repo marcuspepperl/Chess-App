@@ -1,8 +1,8 @@
-package board;
+package main.board;
 
 public class BoardWrapper<T> {
 
-    private T[][] board;
+    private final T[][] board;
     private final int xSize;
     private final int ySize;
 

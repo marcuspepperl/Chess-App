@@ -1,4 +1,4 @@
-package board;
+package main.board;
 
 public class InvalidMoveException extends Exception {
 

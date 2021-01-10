@@ -1,8 +1,8 @@
-package board;
+package main.board;
 
 public class Coordinates {
-    private int xPos;
-    private int yPos;
+    private final int xPos;
+    private final int yPos;
 
     public Coordinates(int xPos, int yPos) {
         this.xPos = xPos;
@@ -23,5 +23,15 @@ public class Coordinates {
        }
        Coordinates otherCoords = (Coordinates) obj;
        return this.xPos == otherCoords.getXPos() && this.yPos == otherCoords.getYPos();
+    }
+
+    @Override
+    public String toString() {
+        return "(" + this.xPos + ", " + this.yPos + ")";
+    }
+
+    @Override
+    public int hashCode() {
+        return this.xPos + this.yPos;
     }
 }

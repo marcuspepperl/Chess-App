@@ -1,34 +1,25 @@
-package piece;
+package main.piece;
 
-import board.BoardWrapper;
-import board.Coordinates;
+import main.board.BoardWrapper;
+import main.board.Coordinates;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public abstract class ADistancePiece extends APiece {
 
-    private static Set<Coordinates> directions;
-
     public ADistancePiece(Coordinates coordinates, int color) {
         super(coordinates, color);
     }
 
-    public Set<Coordinates> validMoves(BoardWrapper<Integer> colorBoard) {
+    public void updateValidMoves(BoardWrapper<Integer> colorBoard) {
 
         Set<Coordinates> validSquares = new HashSet<>();
 
         for (Coordinates direction : this.getDirections()) {
             validSquares.addAll(this.movesInDirection(direction, colorBoard));
         }
-        return validSquares;
-    }
-
-    public Set<Coordinates> getDirections() {
-        if (directions == null) {
-            directions = getDirectionsHelper();
-        }
-        return directions;
+        this.validMoves = validSquares;
     }
 
     protected Set<Coordinates> movesInDirection(Coordinates offSet, BoardWrapper<Integer>
@@ -52,6 +43,8 @@ public abstract class ADistancePiece extends APiece {
         }
         return validSquares;
     }
+
+    protected abstract Set<Coordinates> getDirections();
 
     protected abstract Set<Coordinates> getDirectionsHelper();
 }

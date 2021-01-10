@@ -1,8 +1,8 @@
-package piece;
+package main.piece;
 
 import java.util.HashSet;
 import java.util.Set;
-import board.Coordinates;
+import main.board.Coordinates;
 
 public class Queen extends ADistancePiece {
 
@@ -10,6 +10,17 @@ public class Queen extends ADistancePiece {
 
     public Queen(Coordinates coordinates, int color) {
         super(coordinates, color);
+    }
+
+    public char getType() {
+        return 'Q';
+    }
+
+    protected Set<Coordinates> getDirections() {
+        if (directions == null) {
+            directions = getDirectionsHelper();
+        }
+        return directions;
     }
 
     protected Set<Coordinates> getDirectionsHelper() {

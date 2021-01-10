@@ -1,7 +1,7 @@
-package piece;
+package main.piece;
 
-import board.BoardWrapper;
-import board.Coordinates;
+import main.board.BoardWrapper;
+import main.board.Coordinates;
 
 import java.util.Set;
 
@@ -10,11 +10,16 @@ public abstract class APiece {
     protected Coordinates coordinates;
     protected int moveCount;
     protected int color;
+    protected Set<Coordinates> validMoves;
 
     public APiece(Coordinates coordinates, int color) {
         this.coordinates = coordinates;
         this.color = color;
         this.moveCount = 0;
+    }
+
+    public void setCoordinates(Coordinates coordinates) {
+        this.coordinates = coordinates;
     }
 
     public Coordinates getCoordinates() {
@@ -34,14 +39,19 @@ public abstract class APiece {
         this.moveCount++;
     }
 
-
-    public boolean isValidMove(Coordinates newCoordinates, BoardWrapper<Integer> colorBoard) {
-        return this.validMoves(colorBoard).contains(newCoordinates);
+    public Set<Coordinates> getValidMoves() {
+        return this.validMoves;
     }
 
-    public abstract Set<Coordinates> validMoves(BoardWrapper<Integer> colorBoard);
+    public boolean isValidMove(Coordinates newCoordinates) {
+        return this.validMoves.contains(newCoordinates);
+    }
 
     protected boolean inBounds(int xPos, int yPos, int xSize, int ySize) {
-        return xPos > 0 && xPos < xSize && yPos > 0 && yPos < ySize;
+        return xPos >= 0 && xPos < xSize && yPos >= 0 && yPos < ySize;
     }
+
+    public abstract void updateValidMoves(BoardWrapper<Integer> colorBoard);
+
+    public abstract char getType();
 }

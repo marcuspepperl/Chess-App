@@ -1,10 +1,10 @@
-package piece;
+package main.piece;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import board.BoardWrapper;
-import board.Coordinates;
+import main.board.BoardWrapper;
+import main.board.Coordinates;
 
 public class Pawn extends APiece {
 
@@ -12,7 +12,11 @@ public class Pawn extends APiece {
         super(coordinates, color);
     }
 
-    public Set<Coordinates> validMoves(BoardWrapper<Integer> colorBoard) {
+    public char getType() {
+        return 'P';
+    }
+
+    public void updateValidMoves(BoardWrapper<Integer> colorBoard) {
 
         int xSize = colorBoard.getXSize(), ySize = colorBoard.getYSize();
         int xPos = this.coordinates.getXPos(), yPos = this.coordinates.getYPos();
@@ -24,8 +28,8 @@ public class Pawn extends APiece {
 
             newYPos += this.color;
             if (this.inBounds(xPos, newYPos, xSize, ySize) && colorBoard.getValue(xPos, newYPos) == 0
-                && ((this.color == 1 && newYPos == 1) || (this.color == -1 &&
-                    (newYPos == ySize - 2)))) {
+                && ((this.color == 1 && yPos == 1) || (this.color == -1 &&
+                    (yPos == ySize - 2)))) {
                 validSquares.add(new Coordinates(xPos, newYPos));
             }
         }
@@ -39,7 +43,7 @@ public class Pawn extends APiece {
             colorBoard.getValue(xPos - 1, newYPos) == -1 * this.color) {
             validSquares.add(new Coordinates(xPos - 1, yPos + this.color));
         }
-        return validSquares;
+        this.validMoves = validSquares;
     }
 
 }

@@ -1,6 +1,6 @@
-package board;
+package main.board;
 
-import piece.*;
+import main.piece.*;
 
 public class MoveEngine {
 
@@ -67,27 +67,34 @@ public class MoveEngine {
         }
 
         protected boolean handleStandard(Coordinates startSquare, Coordinates endSquare) {
+            APiece movePiece = gameBoard.getPiece(startSquare);
             if (!this.validStandard(startSquare, endSquare)) {
                 return false;
             }
             this.executeStandard(startSquare, endSquare);
+            gameBoard.endMove(movePiece);
+            gameBoard.updateValidMoves();
             return true;
         }
 
         protected boolean validStandard(Coordinates startSquare, Coordinates endSquare) {
-            return gameBoard.getPiece(startSquare).isValidMove(endSquare, gameBoard.getColorBoard())
+            return gameBoard.getPiece(startSquare).isValidMove(endSquare)
                 && this.simulateStandard(startSquare, endSquare);
         }
 
+        // Does not modify the state of the board
         protected boolean simulateStandard(Coordinates startSquare, Coordinates endSquare) {
             APiece movePiece = gameBoard.getPiece(startSquare), takePiece = gameBoard.getPiece(endSquare);
-            this.executeHelperStandard(startSquare, endSquare);
-            boolean validMove = gameBoard.isCheck(movePiece.getColor());
+            gameBoard.setPiece(startSquare, null);
+            gameBoard.setPiece(endSquare, movePiece);
+            movePiece.setCoordinates(endSquare);
+            gameBoard.updateValidMoves();
+            boolean validMove = !gameBoard.isCheck(movePiece.getColor());
 
             gameBoard.setPiece(startSquare, movePiece);
-            gameBoard.setColor(startSquare, movePiece.getColor());
             gameBoard.setPiece(endSquare, takePiece);
-            gameBoard.setColor(endSquare, takePiece == null ? 0 : takePiece.getColor());
+            movePiece.setCoordinates(startSquare);
+            gameBoard.updateValidMoves();
 
             return validMove;
         }
@@ -95,16 +102,9 @@ public class MoveEngine {
         protected void executeStandard(Coordinates startSquare, Coordinates endSquare) {
             APiece movePiece = gameBoard.getPiece(startSquare);
             gameBoard.takePiece(gameBoard.getPiece(endSquare));
-            this.executeHelperStandard(startSquare, endSquare);
-            movePiece.move(startSquare);
-        }
-
-        protected void executeHelperStandard(Coordinates startSquare, Coordinates endSquare) {
-            APiece movePiece = gameBoard.getPiece(startSquare);
             gameBoard.setPiece(startSquare, null);
-            gameBoard.setColor(startSquare, 0);
             gameBoard.setPiece(endSquare, movePiece);
-            gameBoard.setColor(endSquare, movePiece.getColor());
+            movePiece.move(endSquare);
         }
     }
 
@@ -136,7 +136,8 @@ public class MoveEngine {
             this.executeStandard(startSquare, endSquare);
             gameBoard.takePiece(movePiece);
             gameBoard.addPiece(newPiece);
-            gameBoard.endMove(gameBoard.getPiece(endSquare));
+            gameBoard.endMove(newPiece);
+            gameBoard.updateValidMoves();
         }
     }
 
@@ -147,10 +148,13 @@ public class MoveEngine {
         }
 
         private boolean handleCastles(Coordinates startSquare, Coordinates endSquare) {
+            APiece movePiece = gameBoard.getPiece(startSquare);
             if (!this.validCastles(startSquare, endSquare)) {
                 return false;
             }
             this.executeCastles(startSquare, endSquare);
+            gameBoard.endMove(movePiece);
+            gameBoard.updateValidMoves();
             return true;
         }
 
@@ -186,6 +190,7 @@ public class MoveEngine {
             return this.simulateCastles(startSquare, endSquare);
         }
 
+        // Does not modify the state of the board
         private boolean simulateCastles(Coordinates startSquare, Coordinates endSquare) {
             boolean kingSide = endSquare.getXPos() > startSquare.getXPos();
             int newYPos = endSquare.getYPos();
@@ -232,10 +237,13 @@ public class MoveEngine {
         }
 
         private boolean handleEnPassant(Coordinates startSquare, Coordinates endSquare) {
+            APiece movePiece = gameBoard.getPiece(startSquare);
             if (!this.validEnPassant(startSquare, endSquare)) {
                 return false;
             }
             this.executeEnPassant(startSquare, endSquare);
+            gameBoard.endMove(movePiece);
+            gameBoard.updateValidMoves();
             return true;
         }
 
@@ -269,39 +277,31 @@ public class MoveEngine {
         }
 
         private boolean simulateEnPassant(Coordinates startSquare, Coordinates endSquare) {
-            APiece movePiece = gameBoard.getPiece(startSquare);
-            APiece prevPiece = gameBoard.getPrevPiece();
-            this.executeHelperEnPassant(startSquare, endSquare);
-            boolean validMove = gameBoard.isCheck(movePiece.getColor());
+            APiece movePiece = gameBoard.getPiece(startSquare), prevPiece = gameBoard.getPrevPiece();
+            gameBoard.setPiece(startSquare, null);
+            gameBoard.setPiece(endSquare, movePiece);
+            gameBoard.setPiece(prevPiece.getCoordinates(), null);
+            movePiece.setCoordinates(endSquare);
+            gameBoard.updateValidMoves();
 
-            gameBoard.setPiece(endSquare, null);
-            gameBoard.setColor(endSquare, 0);
+            boolean validMove = !gameBoard.isCheck(movePiece.getColor());
+
             gameBoard.setPiece(startSquare, movePiece);
-            gameBoard.setColor(startSquare, movePiece.getColor());
+            gameBoard.setPiece(endSquare, null);
             gameBoard.setPiece(prevPiece.getCoordinates(), prevPiece);
-            gameBoard.setColor(prevPiece.getCoordinates(), prevPiece.getColor());
+            movePiece.setCoordinates(startSquare);
+            gameBoard.updateValidMoves();
 
             return validMove;
         }
 
         private void executeEnPassant(Coordinates startSquare, Coordinates endSquare) {
-            this.executeHelperEnPassant(startSquare, endSquare);
-            gameBoard.takePiece(gameBoard.getPrevPiece());
-            gameBoard.getPiece(startSquare).move(endSquare);
-        }
-
-        private void executeHelperEnPassant(Coordinates startSquare, Coordinates endSquare) {
-            APiece movePiece = gameBoard.getPiece(startSquare);
-            Coordinates prevCoordinates = gameBoard.getPrevPiece().getCoordinates();
+            APiece movePiece = gameBoard.getPiece(startSquare), prevPiece = gameBoard.getPrevPiece();
+            gameBoard.takePiece(prevPiece);
             gameBoard.setPiece(startSquare, null);
-            gameBoard.setColor(startSquare, 0);
             gameBoard.setPiece(endSquare, movePiece);
-            gameBoard.setColor(endSquare, movePiece.getColor());
-            gameBoard.setPiece(prevCoordinates, null);
-            gameBoard.setColor(prevCoordinates, 0);
+            gameBoard.setPiece(prevPiece.getCoordinates(), null);
+            movePiece.move(endSquare);
         }
     }
-
-
-
 }

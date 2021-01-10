@@ -1,6 +1,6 @@
-package board;
+package main.board;
 
-import piece.*;
+import main.piece.*;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -30,8 +30,8 @@ public class GameBoard {
         }
         this.xSize = xSize;
         this.ySize = ySize;
-        this.pieceBoard = this.initializePieceBoard(xSize, ySize);
-        this.colorBoard = this.initializeColorBoard(xSize, ySize);
+        this.pieceBoard = initializePieceBoard(xSize, ySize);
+        this.colorBoard = initializeColorBoard(xSize, ySize);
         this.whitePieces = new HashSet<>();
         this.blackPieces = new HashSet<>();
         this.takenWhitePieces = new HashSet<>();
@@ -49,16 +49,16 @@ public class GameBoard {
             Coordinates coordinates = piece.getCoordinates();
             color = piece.getColor();
 
-            if (!inBounds(coordinates) || this.getColor(coordinates) != 0) {
-                throw new InvalidSetUpException("Invalid white piece");
+            if (!inBounds(coordinates)) {
+                throw new InvalidSetUpException("Piece out of bounds");
             }
             if (piece instanceof King) {
                 if (color == 1) {
                     whiteKingCount++;
-                    this.whiteKing = (King) piece;
+                    whiteKing = (King) piece;
                 } else {
                     blackKingCount++;
-                    this.blackKing = (King) piece;
+                    blackKing = (King) piece;
                 }
             }
             else if (piece instanceof Pawn) {
@@ -68,7 +68,7 @@ public class GameBoard {
                     throw new InvalidSetUpException("Black pawn on promotion rank");
                 }
             }
-            this.addPiece(piece);
+            addPiece(piece);
         }
 
         if (whiteKingCount != 1 || blackKingCount != 1) {
@@ -76,8 +76,13 @@ public class GameBoard {
         }
     }
 
-    public boolean isCheck(int color) {
-        return !this.checkBy(color).isEmpty();
+    public void updateValidMoves() {
+        for (APiece whitePiece : this.whitePieces) {
+            whitePiece.updateValidMoves(colorBoard);
+        }
+        for (APiece blackPiece : this.blackPieces) {
+            blackPiece.updateValidMoves(colorBoard);
+        }
     }
 
     public boolean isCheckMate(int color) {
@@ -88,48 +93,66 @@ public class GameBoard {
         return !isCheck(color) && !hasValidMove(color);
     }
 
-    public Set<Coordinates> checkBy(int color) {
-
-        Set<Coordinates> checkSet = new HashSet<>();
-        Set<APiece> opposingPieces;
+    public boolean isCheck(int color) {
         APiece defendingKing;
         if (color == 1) {
-            opposingPieces = this.blackPieces;
-            defendingKing = this.whiteKing;
+            defendingKing = whiteKing;
         } else {
-            opposingPieces = this.whitePieces;
-            defendingKing = this.blackKing;
+            defendingKing = blackKing;
         }
-        Coordinates kingCoordinates = defendingKing.getCoordinates();
-        for (APiece opposingPiece : opposingPieces) {
-            if (opposingPiece.isValidMove(kingCoordinates, this.colorBoard)) {
-                checkSet.add(opposingPiece.getCoordinates());
+        Coordinates kingCoordinates = defendingKing.getCoordinates(), attackingCoordinates;
+        System.out.println(kingCoordinates);
+        for (int xPos = 0; xPos < this.xSize; xPos++) {
+            for (int yPos = 0; yPos < this.ySize; yPos++) {
+                attackingCoordinates = new Coordinates(xPos, yPos);
+                if (this.getColor(attackingCoordinates) == -1 * color &&
+                    this.getPiece(attackingCoordinates).isValidMove(kingCoordinates)) {
+                    return true;
+                }
             }
         }
-        return checkSet;
+        return false;
     }
-
-
 
     // returns true if promotion is requested
     public boolean handleMove(Coordinates[] request, int color) throws
         InvalidMoveException {
-        return this.moveEngine.handleMove(request, color);
+        return moveEngine.handleMove(request, color);
     }
 
     public void handlePromotion(Coordinates startSquare, Coordinates endSquare, APiece
         newPiece) {
-        this.moveEngine.handlePromotion(startSquare, endSquare, newPiece);
+        moveEngine.handlePromotion(startSquare, endSquare, newPiece);
+    }
+
+    public int getXSize() {
+        return xSize;
+    }
+
+    public int getYSize() {
+        return ySize;
+    }
+
+    public APiece getPrevPiece() {
+        return prevPiece;
+    }
+
+    public APiece getPiece(Coordinates coordinates) {
+        return pieceBoard.getValue(coordinates.getXPos(), coordinates.getYPos());
+    }
+
+    public Integer getColor(Coordinates coordinates) {
+        return colorBoard.getValue(coordinates.getXPos(), coordinates.getYPos());
     }
 
     boolean takePiece(APiece piece) {
         if (piece != null) {
             if (piece.getColor() == 1) {
-                this.whitePieces.remove(piece);
-                this.takenWhitePieces.add(piece);
+                whitePieces.remove(piece);
+                takenWhitePieces.add(piece);
             } else {
-                this.blackPieces.remove(piece);
-                this.takenBlackPieces.add(piece);
+                blackPieces.remove(piece);
+                takenBlackPieces.add(piece);
             }
             return true;
         }
@@ -138,72 +161,47 @@ public class GameBoard {
 
     void addPiece(APiece piece) {
 
-        this.setColor(piece.getCoordinates(), piece.getColor());
-        this.setPiece(piece.getCoordinates(), piece);
-
+        setPiece(piece.getCoordinates(), piece);
         if (piece.getColor() == 1) {
-            this.whitePieces.add(piece);
+            whitePieces.add(piece);
         } else {
-            this.blackPieces.add(piece);
+            blackPieces.add(piece);
+        }
+    }
+
+    void setPiece(Coordinates coordinates, APiece piece) {
+        pieceBoard.setValue(coordinates.getXPos(), coordinates.getYPos(), piece);
+        if (piece == null) {
+            colorBoard.setValue(coordinates.getXPos(), coordinates.getYPos(), 0);
+        } else {
+            colorBoard.setValue(coordinates.getXPos(), coordinates.getYPos(), piece.getColor());
         }
     }
 
     void endMove(APiece movePiece) {
-        this.prevPiece = movePiece;
-        this.moveCount++;
-    }
-
-    APiece getPiece(Coordinates coordinates) {
-        return this.pieceBoard.getValue(coordinates.getXPos(), coordinates.getYPos());
-    }
-
-    int getColor(Coordinates coordinates) {
-        return this.colorBoard.getValue(coordinates.getXPos(), coordinates.getYPos());
-    }
-
-    void setPiece(Coordinates coordinates, APiece piece) {
-        this.pieceBoard.setValue(coordinates.getXPos(), coordinates.getYPos(), piece);
-    }
-
-    void setColor(Coordinates coordinates, int color) {
-        this.colorBoard.setValue(coordinates.getXPos(), coordinates.getYPos(), color);
+        prevPiece = movePiece;
+        moveCount++;
     }
 
     boolean inBounds(Coordinates coordinates) {
-        return coordinates.getXPos() > 0 && coordinates.getXPos() < this.xSize &&
-            coordinates.getYPos() > 0 && coordinates.getYPos() < this.ySize;
-    }
-
-    BoardWrapper<Integer> getColorBoard() {
-        return this.colorBoard;
-    }
-
-    APiece getPrevPiece() {
-        return this.prevPiece;
-    }
-
-    int getXSize() {
-        return this.xSize;
-    }
-
-    int getYSize() {
-        return this.ySize;
+        return coordinates.getXPos() >= 0 && coordinates.getXPos() < xSize &&
+            coordinates.getYPos() >= 0 && coordinates.getYPos() < ySize;
     }
 
     // standard moves and en passant
     private boolean hasValidMove(int color) {
         Set<APiece> allPieces;
         if (color == 1) {
-            allPieces = this.whitePieces;
+            allPieces = whitePieces;
         } else {
-            allPieces = this.blackPieces;
+            allPieces = blackPieces;
         }
         Coordinates coordinates, leftSquare, rightSquare;
         for (APiece piece : allPieces) {
             coordinates = piece.getCoordinates();
-            for (Coordinates newSquare : piece
-                .validMoves(this.getColorBoard())) {
-                if (this.moveEngine.validStandard(coordinates, newSquare)) {
+            for (Coordinates newSquare : piece.getValidMoves()) {
+                if (moveEngine.validStandard(coordinates, newSquare)) {
+                    System.out.println(coordinates.toString() + newSquare.toString());
                     return true;
                 }
             }
@@ -212,11 +210,8 @@ public class GameBoard {
                     coordinates.getYPos() + color);
                 rightSquare = new Coordinates(coordinates.getXPos() + 1,
                     coordinates.getYPos() + color);
-                if ((this.inBounds(leftSquare) && this.moveEngine.
-                    validEnPassant(coordinates, leftSquare))
-                    || (this.inBounds(rightSquare) && this.moveEngine.
-                    validEnPassant(coordinates, rightSquare))) {
-
+                if ((inBounds(leftSquare) && moveEngine.validEnPassant(coordinates, leftSquare))
+                    || (inBounds(rightSquare) && moveEngine.validEnPassant(coordinates, rightSquare))) {
                     return true;
                 }
             }

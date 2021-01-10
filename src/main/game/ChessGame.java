@@ -1,18 +1,18 @@
-package game;
+package main.game;
 
-import board.*;
-import player.*;
-import piece.*;
+import main.board.*;
+import main.player.*;
+import main.piece.*;
+import main.display.*;
 
 import java.util.Set;
 import java.util.Map;
 
 public class ChessGame {
 
-    private static int gameCount = 0;
-
     public void runStandardGame(Player whitePlayer, Player blackPlayer) throws
         InvalidSetUpException {
+
         GameBoard board = new GameBoard(8, 8);
         Set<APiece> allPieces = PieceSetBuilder.getStandardWhite();
         allPieces.addAll(PieceSetBuilder.getStandardBlack());
@@ -22,15 +22,19 @@ public class ChessGame {
 
      public void runGame(GameBoard board, Player whitePlayer, Player blackPlayer) throws
          InvalidSetUpException {
-         gameCount++;
-         Map<Integer, Player> players = Map.of(1, whitePlayer, -1, blackPlayer);
-         int turn = 1;
 
-         if (!board.isCheck(1)) {
+         Map<Integer, Player> players = Map.of(1, whitePlayer, -1, blackPlayer);
+         ConsoleDisplay display = new ConsoleDisplay(board);
+         int turn = 1;
+         board.updateValidMoves();
+
+         if (board.isCheck(-1)) {
              throw new InvalidSetUpException("Impossible set up position");
          }
 
          while (true) {
+             display.displayStringBoard(turn);
+
              if (board.isCheckMate(turn)) {
                  this.endGame(board, players.get(1), players.get(-1), -1 * turn);
                  break;
@@ -39,22 +43,29 @@ public class ChessGame {
                  this.endGame(board, players.get(1), players.get(-1), 0);
                  break;
              }
-
              Player player = players.get(turn);
-            this.runMove(board, player, turn);
-            turn *= -1;
+             this.runMove(board, player, turn);
+             board.updateValidMoves();
+             turn *= -1;
          }
      }
 
      public void runMove(GameBoard board, Player player, int turn) {
         while (true) {
              try {
+                 if (turn == 1) {
+                     System.out.println("White to move");
+                 } else {
+                     System.out.println("Black to move");
+                 }
                  Coordinates[] request = player.requestMove();
                  if (board.handleMove(request, turn)) {
                      this.runPromotion(board, player, request, turn);
                  }
+                 System.out.println("Move accepted");
                  break;
-             } catch (InvalidMoveException ignored) {
+             } catch (InvalidMoveException e) {
+                 System.out.println(e.getMessage());
              }
         }
      }
@@ -65,6 +76,7 @@ public class ChessGame {
          do {
              promotionPiece = this.createPiece(player.requestPromotion(), turn);
              } while (promotionPiece == null);
+         promotionPiece.setCoordinates(request[1]);
          board.handlePromotion(request[0], request[1], promotionPiece);
      }
 
@@ -79,11 +91,8 @@ public class ChessGame {
             whitePlayer.addDraw();
             blackPlayer.addDraw();
         }
+         System.out.println("Game Ended");
      }
-
-    public int getGameCount() {
-        return gameCount;
-    }
 
      private APiece createPiece(int pieceType, int color) {
         if (pieceType == 0 || pieceType == 5) {

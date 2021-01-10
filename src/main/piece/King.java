@@ -1,10 +1,10 @@
-package piece;
+package main.piece;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import board.BoardWrapper;
-import board.Coordinates;
+import main.board.BoardWrapper;
+import main.board.Coordinates;
 
 public class King extends APiece {
 
@@ -14,7 +14,11 @@ public class King extends APiece {
         super(coordinates, color);
     }
 
-    public Set<Coordinates> validMoves(BoardWrapper<Integer> colorBoard) {
+    public char getType() {
+        return 'K';
+    }
+
+    public void updateValidMoves(BoardWrapper<Integer> colorBoard) {
 
         int xSize = colorBoard.getXSize(), ySize = colorBoard.getYSize();
         int xPos = this.coordinates.getXPos(), yPos = this.coordinates.getYPos();
@@ -30,7 +34,7 @@ public class King extends APiece {
                 validSquares.add(new Coordinates(newXPos, newYPos));
             }
         }
-        return validSquares;
+       this.validMoves = validSquares;
     }
 
     private Set<Coordinates> getMoves() {
